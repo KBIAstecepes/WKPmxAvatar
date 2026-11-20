@@ -1,0 +1,170 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <Import Project="local/Build.Local.props" Condition="Exists('local/Build.Local.props')" />
+ <PropertyGroup>
+  <TargetFramework>netstandard2.1</TargetFramework><AssemblyName>WKPmxAvatar</AssemblyName><Version>1.0.0</Version><Authors>CllIEBE</Authors><Company>CllIEBE</Company><Product>联机扩展-洛茜模组</Product><Title>联机扩展-洛茜模组</Title><Copyright>Copyright (c) 2026 CllIEBE</Copyright><PackageLicenseExpression>MIT</PackageLicenseExpression><LangVersion>12.0</LangVersion>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems><EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+  <BuildFlavor Condition="'$(BuildFlavor)'==''">Development</BuildFlavor>
+  <Deterministic>true</Deterministic><PathMap>$(BaseIntermediateOutputPath)=/_/obj,$(MSBuildProjectDirectory)=/_/WKPmxAvatar</PathMap><DebugType>none</DebugType>
+ </PropertyGroup>
+ <Target Name="ValidateLocalInputs" BeforeTargets="ResolveReferences">
+  <Error Condition="'$(GameRoot)'==''" Text="Set GameRoot in local/Build.Local.props or pass -p:GameRoot=..." />
+  <Error Condition="'$(BuildFlavor)'!='Development' and '$(BuildFlavor)'!='PublicRelease'" Text="Unknown BuildFlavor" />
+ </Target>
+ <PropertyGroup Condition="'$(BuildFlavor)'=='Development'"><DefineConstants>$(DefineConstants);WKPMX_DEV</DefineConstants></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="src/Runtime/Physics/RuntimeSecondaryMotion.cs" />
+  <Compile Include="src/Runtime/Physics/SecondaryRig.cs" />
+  <Compile Include="src/Runtime/Physics/SkirtPose.cs" />
+  <Compile Include="src/Runtime/Physics/PoseDrapeKeys.cs" />
+  <Compile Include="src/Runtime/Physics/BoneChain.cs" />
+  <Compile Include="src/Runtime/Physics/SkirtSurface.cs" />
+  <Compile Include="src/Runtime/Compatibility/AvatarSelectionSync.cs" />
+  <Compile Include="src/Runtime/Common/BoundedWeakCache.cs" />
+  <Compile Include="src/DevTools/FrameTimingWindow.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Animation/OriginalMotionPreview.cs" />
+  <Compile Include="src/DevTools/PerformanceMonitor.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Hands/FirstPersonSkin.cs" />
+  <Compile Include="src/Runtime/Hands/HeldHandAssets.cs" />
+  <Compile Include="src/Runtime/Hands/HeldHandSkin.cs" />
+  <Compile Include="src/Runtime/Models/AvatarAsset.cs" />
+  <Compile Include="src/Runtime/Interaction/BodyGrabAlignment.cs" />
+  <Compile Include="src/DevTools/ContinuousRoutePreview.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Compatibility/CrouchSync.cs" />
+  <Compile Include="src/Runtime/Animation/DistanceLocomotion.cs" />
+  <Compile Include="src/Runtime/Hands/FirstPersonAssets.cs" />
+  <Compile Include="src/Runtime/Interaction/InteractionPosePreview.cs" />
+  <Compile Include="src/Runtime/Grips/ItemGripProfiles.cs" />
+  <Compile Include="src/Runtime/UI/LobbyLayout.cs" />
+  <Compile Include="src/Runtime/UI/LobbyVisibility.cs" />
+  <Compile Include="src/Runtime/Models/ModelCatalog.cs" />
+  <Compile Include="src/Runtime/Models/ModelProfiles.cs" />
+  <Compile Include="src/Runtime/Animation/NativeAirSelection.cs" />
+  <Compile Include="src/Runtime/Animation/NativeBackDodge.cs" />
+  <Compile Include="src/Runtime/Animation/NativeGroundTransition.cs" />
+  <Compile Include="src/Runtime/UI/NativeLobbyStyle.cs" />
+  <Compile Include="src/Runtime/Animation/NaturalLookPose.cs" />
+  <Compile Include="src/Runtime/Animation/ObservedCrouchPose.cs" />
+  <Compile Include="src/Runtime/Animation/RemoteNativeMotion.cs" />
+  <Compile Include="src/Runtime/Rendering/TailMaterialSplit.cs" />
+  <Compile Include="src/Runtime/Rendering/MaterialPolicy.cs" />
+  <Compile Include="src/Runtime/Animation/MotionMath.cs" />
+  <Compile Include="src/Runtime/Models/PmxReader.cs" />
+  <Compile Include="src/Runtime/Bootstrap/Plugin.cs" />
+  <Compile Include="src/Runtime/Rendering/AvatarAppearanceBinding.cs" />
+  <Compile Include="src/Runtime/Rendering/EndfieldResources.cs" />
+  <Compile Include="src/Runtime/Rendering/EyeFaceUvTransfer.cs" />
+  <Compile Include="src/Runtime/Rendering/EyeShadowFeather.cs" />
+  <Compile Include="src/Runtime/Rendering/FaceFrameBinding.cs" />
+  <Compile Include="src/Runtime/Gaze/EyeGazeWorld.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Gaze/EyePoseLayer.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Gaze/NearestPlayerGaze.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/DevTools/CornerAvatarView.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Gaze/RossiGazeSources.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/DevTools/AvatarMenu.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/Runtime/Animation/AvatarMotion.cs" />
+  <Compile Include="src/Runtime/UI/LobbyAvatarMenu.cs" />
+  <Compile Include="src/Runtime/Grips/AcceptedGripLayer.cs" />
+  <Compile Include="src/Runtime/Grips/AssemblyGripPose.cs" />
+  <Compile Include="src/Runtime/Grips/AuthoredAssemblyGrips.cs" />
+  <Compile Include="src/Runtime/Grips/AuthoredGripLayer.cs" />
+  <Compile Include="src/Runtime/Hands/HandAppearanceOptions.cs" />
+  <Compile Include="src/Runtime/Grips/VisualHeldItem.cs" />
+  <EmbeddedResource Include="profiles/PhysicsProfile.json" LogicalName="WKPmxAvatar.PhysicsProfile.json" />
+  <EmbeddedResource Include="profiles/AuthoredGrips.json" LogicalName="WKPmxAvatar.AuthoredGrips.json" />
+  <EmbeddedResource Include="profiles/AuthoredAssemblyGrips.json" LogicalName="WKPmxAvatar.AuthoredAssemblyGrips.json" />
+  <EmbeddedResource Condition="'$(BuildFlavor)'=='Development'" Include="profiles/GazeProfile.json" LogicalName="WKPmxAvatar.EyeProfile.json" />
+  <Reference Include="UnityEngine.AccessibilityModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AccessibilityModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AdaptivePerformanceModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AdaptivePerformanceModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AMDModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AMDModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AndroidJNIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AndroidJNIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AnimationModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AnimationModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ARModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ARModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AssetBundleModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AssetBundleModule.dll" Private="false" />
+  <Reference Include="UnityEngine.AudioModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.AudioModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ClothModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ClothModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ClusterInputModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ClusterInputModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ClusterRendererModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ClusterRendererModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ContentLoadModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ContentLoadModule.dll" Private="false" />
+  <Reference Include="UnityEngine.CoreModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.CoreModule.dll" Private="false" />
+  <Reference Include="UnityEngine.CrashReportingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.CrashReportingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.DirectorModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.DirectorModule.dll" Private="false" />
+  <Reference Include="UnityEngine" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.dll" Private="false" />
+  <Reference Include="UnityEngine.DSPGraphModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.DSPGraphModule.dll" Private="false" />
+  <Reference Include="UnityEngine.GameCenterModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.GameCenterModule.dll" Private="false" />
+  <Reference Include="UnityEngine.GIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.GIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.GraphicsStateCollectionSerializerModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.dll" Private="false" />
+  <Reference Include="UnityEngine.GridModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.GridModule.dll" Private="false" />
+  <Reference Include="UnityEngine.HierarchyCoreModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.HierarchyCoreModule.dll" Private="false" />
+  <Reference Include="UnityEngine.HierarchyModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.HierarchyModule.dll" Private="false" />
+  <Reference Include="UnityEngine.HotReloadModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.HotReloadModule.dll" Private="false" />
+  <Reference Include="UnityEngine.IdentifiersModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.IdentifiersModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ImageConversionModule.dll" Private="false" />
+  <Reference Include="UnityEngine.IMGUIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.IMGUIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.InputForUIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.InputForUIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.InputLegacyModule.dll" Private="false" />
+  <Reference Include="UnityEngine.InputModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.InputModule.dll" Private="false" />
+  <Reference Include="UnityEngine.InsightsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.InsightsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.JSONSerializeModule.dll" Private="false" />
+  <Reference Include="UnityEngine.LocalizationModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.LocalizationModule.dll" Private="false" />
+  <Reference Include="UnityEngine.MarshallingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.MarshallingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.MultiplayerModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.MultiplayerModule.dll" Private="false" />
+  <Reference Include="UnityEngine.NVIDIAModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.NVIDIAModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ParticleSystemModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ParticleSystemModule.dll" Private="false" />
+  <Reference Include="UnityEngine.PerformanceReportingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.PerformanceReportingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.Physics2DModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.Physics2DModule.dll" Private="false" />
+  <Reference Include="UnityEngine.PhysicsBackendPhysXModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.dll" Private="false" />
+  <Reference Include="UnityEngine.PhysicsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.PhysicsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.PropertiesModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.PropertiesModule.dll" Private="false" />
+  <Reference Include="UnityEngine.RenderAs2DModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.RenderAs2DModule.dll" Private="false" />
+  <Reference Include="UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ScreenCaptureModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ScreenCaptureModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ShaderRuntimeModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ShaderRuntimeModule.dll" Private="false" />
+  <Reference Include="UnityEngine.ShaderVariantAnalyticsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.SharedInternalsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.SharedInternalsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.SpriteMaskModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.SpriteMaskModule.dll" Private="false" />
+  <Reference Include="UnityEngine.SpriteShapeModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.SpriteShapeModule.dll" Private="false" />
+  <Reference Include="UnityEngine.StreamingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.StreamingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.SubstanceModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.SubstanceModule.dll" Private="false" />
+  <Reference Include="UnityEngine.SubsystemsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.SubsystemsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TerrainModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TerrainModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TerrainPhysicsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TerrainPhysicsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TextCoreFontEngineModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TextCoreTextEngineModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TextCoreTextEngineModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TextRenderingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TilemapModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TilemapModule.dll" Private="false" />
+  <Reference Include="UnityEngine.TLSModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.TLSModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UI" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UI.dll" Private="false" />
+  <Reference Include="UnityEngine.UIElementsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UIElementsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UIModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UIModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UmbraModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UmbraModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityAnalyticsCommonModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityAnalyticsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityAnalyticsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityConnectModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityConnectModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityConsentModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityConsentModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityCurlModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityCurlModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityWebRequestAudioModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityWebRequestModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityWebRequestModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityWebRequestTextureModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll" Private="false" />
+  <Reference Include="UnityEngine.UnityWebRequestWWWModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.UnityWebRequestWWWModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VectorGraphicsModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VectorGraphicsModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VehiclesModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VehiclesModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VFXModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VFXModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VideoModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VideoModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VirtualTexturingModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VirtualTexturingModule.dll" Private="false" />
+  <Reference Include="UnityEngine.VRModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.VRModule.dll" Private="false" />
+  <Reference Include="UnityEngine.WindModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.WindModule.dll" Private="false" />
+  <Reference Include="UnityEngine.XRModule" HintPath="$(GameRoot)/White Knuckle_Data/Managed/UnityEngine.XRModule.dll" Private="false" />
+  <Reference Include="Unity.InputSystem" HintPath="$(GameRoot)/White Knuckle_Data/Managed/Unity.InputSystem.dll" Private="false" />
+  <Reference Include="Newtonsoft.Json" HintPath="$(GameRoot)/White Knuckle_Data/Managed/Newtonsoft.Json.dll" Private="false" />
+  <Reference Include="Unity.TextMeshPro" HintPath="$(GameRoot)/White Knuckle_Data/Managed/Unity.TextMeshPro.dll" Private="false" />
+  <Reference Include="BepInEx" HintPath="$(GameRoot)/BepInEx/core/BepInEx.dll" Private="false" />
+  <Reference Include="0Harmony" HintPath="$(GameRoot)/BepInEx/core/0Harmony.dll" Private="false" />
+  <Compile Include="src/Runtime/Animation/MotionClip.cs" />
+  <Compile Include="src/Runtime/Bootstrap/RuntimeDiagnostics.cs" />
+  <Compile Include="src/DevTools/EyeProjectionReport.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/DevTools/MotionPreviewControls.cs" Condition="'$(BuildFlavor)'=='Development'" />
+  <Compile Include="src/DevTools/ContactPreviewControls.cs" Condition="'$(BuildFlavor)'=='Development'" />
+ </ItemGroup>
+</Project>

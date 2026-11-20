@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <GameRoot>YOUR_WHITE_KNUCKLE_GAME_DIRECTORY</GameRoot>
+  </PropertyGroup>
+</Project>

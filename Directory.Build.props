@@ -1,0 +1,7 @@
+<Project>
+ <PropertyGroup>
+  <BuildFlavor Condition="'$(BuildFlavor)'==''">Development</BuildFlavor>
+  <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(MSBuildProjectName)/$(BuildFlavor)/</BaseIntermediateOutputPath>
+  <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/$(BuildFlavor)/$(MSBuildProjectName)/</BaseOutputPath>
+ </PropertyGroup>
+</Project>
