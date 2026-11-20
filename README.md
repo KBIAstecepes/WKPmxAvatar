@@ -4,7 +4,9 @@
 
 ## Mod 介绍
 
-这是《White Knuckle》的多人外观扩展，基于 Simple Multi Player 让玩家在联机中使用《明日方舟：终末地》角色洛茜。[发布与下载](https://thunderstore.io/c/white-knuckle/p/AAA_NearFuture/Multiplayer_Expansion_Rossi/)
+这是《White Knuckle》的多人外观扩展，基于 Simple Multi Player 让玩家在联机中使用《明日方舟：终末地》角色洛茜。
+
+[发布与下载](https://thunderstore.io/c/white-knuckle/p/AAA_NearFuture/Multiplayer_Expansion_Rossi/)
 
 自有代码采用 MIT。模型制作来源为茶叶味香皂，角色和原作相关权利归鹰角网络。[MIT 许可证](LICENSE) · [第三方来源与许可](THIRD_PARTY_NOTICES.md)
 
@@ -16,7 +18,14 @@
 
 ### 从源码构建
 
-使用 `.NET SDK 8.0.101` 和匹配的本地 White Knuckle/BepInEx 引用。把 [配置样例](config/Build.Local.props.example) 复制到 `local/Build.Local.props`，填入 `GameRoot`。在 `profiles/` 提供 `PhysicsProfile.json`、`AuthoredGrips.json` 和 `AuthoredAssemblyGrips.json`。开发版还需要 `GazeProfile.json`。
+1. 使用 `.NET SDK 8.0.101` 和匹配的本地 White Knuckle/BepInEx 引用。
+2. 将 [配置样例](config/Build.Local.props.example) 复制到 `local/Build.Local.props`，填入 `GameRoot`。
+3. 在 `profiles/` 中准备以下文件。
+
+   | 构建 | 配置文件 |
+   |---|---|
+   | 正式版与开发版 | `PhysicsProfile.json`、`AuthoredGrips.json`、`AuthoredAssemblyGrips.json` |
+   | 开发版额外需要 | `GazeProfile.json` |
 
 ```powershell
 ./Build.ps1 -Flavor PublicRelease
@@ -34,10 +43,9 @@
 | 裙摆和材质 | 有裙摆姿态修正与次级运动。高级材质和场景光选项默认开启 |
 | 第一人称手图和狼爪光标 | 两项独立开关，默认关闭，暂且搁置 |
 
-
 ## 未来计划
 
 - 实现人物与环境光照（灯光、信号弹等）的交互效果。
 - 修正第一人称手图的结构与遮挡问题。
 - 优化衣物（尤其是裙子）的弹性、细部接触与性能，保持裙摆长度和贴合。
-- 添加新的可切换人物模型：暂定洁尔佩塔。
+- 添加新的可切换人物模型，暂定洁尔佩塔。
