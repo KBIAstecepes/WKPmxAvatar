@@ -33,6 +33,7 @@ namespace WKPmxAvatar
         int leftState, rightState;
         RemoteNativeMotion native;MotionPlayer nativePlayer;bool usingNative;
         ContactSolver contactPose;ObservedCrouchPose crouchPose;bool? observedCrouch;
+        float observedCrouchUntil;
         VisualHeldItem leftItem=new VisualHeldItem(),rightItem=new VisualHeldItem();
         BodyGrabAlignment bodyGrab;
         NaturalLookPose lookPose;
@@ -41,7 +42,13 @@ namespace WKPmxAvatar
         public bool? MirrorCrouched;
 #endif
         public float CrouchWeight=>crouchPose?.Weight??0;
-        public void ReadCrouch(bool crouched){observedCrouch=crouched;}
+        public void ReadCrouch(bool crouched, float validUntil)
+        {
+            observedCrouch = crouched;
+            observedCrouchUntil = validUntil;
+        }
+
+        public void ClearCrouch() => observedCrouch = null;
         public string NativeStatus=>native?.Status??"Procedural remote motion";
         public bool NativeReady=>native!=null;
         public float NativePoseSpeed=>native?.PoseSpeed??0;public float NativeObservedSpeed=>native?.ObservedSpeed??0;
@@ -149,6 +156,7 @@ internal void MirrorTick(float dt,Transform left,Transform right,int leftInterac
         }
         void LateUpdate()
         {
+            if (observedCrouch.HasValue && Time.unscaledTime >= observedCrouchUntil) ClearCrouch();
             if (!ready || player == null || Plugin.Instance == null) return;
             try { Animate(Time.deltaTime); }
             catch (Exception ex)

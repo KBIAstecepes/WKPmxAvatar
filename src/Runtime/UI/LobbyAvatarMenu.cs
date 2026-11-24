@@ -12,16 +12,50 @@ namespace WKPmxAvatar
         GameObject rossiOptions;string pending,detailsId;
         static object Field(object instance,string name)=>instance==null?null:AccessTools.Field(instance.GetType(),name)?.GetValue(instance);
         bool AnimationOpen=>nativeAnimation!=null&&Field(nativeAnimation,"state") is bool state&&state;
-        public static void Mount(GameObject screen,Plugin plugin)
+        bool mountComplete;
+        public static bool Mount(GameObject screen, Plugin plugin)
         {
-            if(screen.GetComponentInChildren<LobbyAvatarMenu>(true)!=null)return;
-            var pane=screen.transform.Find("Lobby Pane");if(pane==null)return;
-            var animator=pane.GetComponents<Component>().FirstOrDefault(c=>c!=null&&c.GetType().Name=="UI_LerpOpen");if(animator==null){plugin.SelectionWarning("Native lobby animation unavailable; avatar entry not mounted.");return;}
+            var pane = screen.transform.Find("Lobby Pane");
+            if (pane == null) return false;
+            if (pane.GetComponentsInChildren<LobbyAvatarMenu>(true).Any(menu => menu.mountComplete && menu.owner == plugin))
+                return true;
+            var animator = pane.GetComponents<Component>().FirstOrDefault(c => c != null && c.GetType().Name == "UI_LerpOpen");
+            if (animator == null) return false;
+
             // Inherit the original transform tween, canvas, fading and input layer.
-            var root=new GameObject("WKPmx_AvatarSelection",typeof(RectTransform),typeof(CanvasGroup));root.layer=pane.gameObject.layer;root.transform.SetParent(pane,false);Stretch(root.GetComponent<RectTransform>());
-            var menu=root.AddComponent<LobbyAvatarMenu>();menu.owner=plugin;menu.hostPane=pane.gameObject;menu.nativeAnimation=animator;menu.nativeGroup=Field(animator,"group") as CanvasGroup??pane.GetComponent<CanvasGroup>();menu.gate=root.GetComponent<CanvasGroup>();menu.gate.ignoreParentGroups=false;menu.gate.alpha=0;menu.gate.blocksRaycasts=menu.gate.interactable=false;
-            menu.style=new NativeLobbyStyle(screen);menu.font=menu.style.Font;menu.Build();
-            menu.shown=Field(animator,"eventOnShow") as UnityEvent;menu.hidden=Field(animator,"eventOnHide") as UnityEvent;menu.shown?.AddListener(menu.NativeShow);menu.hidden?.AddListener(menu.NativeHide);menu.SyncVisibility();plugin.InfoLog(menu.style.Description+"; anchored to native Lobby Pane animation");
+            var root = new GameObject("WKPmx_AvatarSelection", typeof(RectTransform), typeof(CanvasGroup));
+            try
+            {
+                root.layer = pane.gameObject.layer;
+                root.transform.SetParent(pane, false);
+                Stretch(root.GetComponent<RectTransform>());
+                var menu = root.AddComponent<LobbyAvatarMenu>();
+                menu.owner = plugin;
+                menu.hostPane = pane.gameObject;
+                menu.nativeAnimation = animator;
+                menu.nativeGroup = Field(animator, "group") as CanvasGroup ?? pane.GetComponent<CanvasGroup>();
+                menu.gate = root.GetComponent<CanvasGroup>();
+                menu.gate.ignoreParentGroups = false;
+                menu.gate.alpha = 0;
+                menu.gate.blocksRaycasts = menu.gate.interactable = false;
+                menu.style = new NativeLobbyStyle(screen);
+                menu.font = menu.style.Font;
+                menu.Build();
+                menu.shown = Field(animator, "eventOnShow") as UnityEvent;
+                menu.hidden = Field(animator, "eventOnHide") as UnityEvent;
+                menu.shown?.AddListener(menu.NativeShow);
+                menu.hidden?.AddListener(menu.NativeHide);
+                menu.SyncVisibility();
+                menu.mountComplete = true;
+                plugin.InfoLog(menu.style.Description + "; anchored to native Lobby Pane animation");
+                return true;
+            }
+            catch
+            {
+                root.SetActive(false);
+                Destroy(root);
+                throw;
+            }
         }
         static void Stretch(RectTransform r){r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;}
         static RectTransform Box(string name,Transform parent,Vector2 anchor,Vector2 pivot,Vector2 pos,Vector2 size)

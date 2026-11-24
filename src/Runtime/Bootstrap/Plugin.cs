@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
-using HarmonyLib;
 using UnityEngine;
 
 namespace WKPmxAvatar
@@ -42,12 +41,16 @@ namespace WKPmxAvatar
         readonly HashSet<string> failed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         readonly List<AvatarMotion> instances = new List<AvatarMotion>();
         readonly Dictionary<object, GameObject> containers = new Dictionary<object, GameObject>();
-        Harmony harmony;
+        MultiplayerHooks multiplayer;
         string baseFolder;
         ConfigEntry<string> personalModel;
         internal ModelCatalog Models {get;private set;}=new ModelCatalog();
         AvatarSelectionSync selectionSync;bool selectionWarned,refreshing,refreshRequested;
-        readonly Dictionary<object,string> peerModels=new Dictionary<object,string>();
+        readonly HashSet<object> pendingPeers = new HashSet<object>();
+        readonly Dictionary<object, ulong> containerIds = new Dictionary<object, ulong>();
+        readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, object> retiredContainers =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<object, object>();
+        internal AvatarSelectionSync SelectionSync => selectionSync;
         internal string PersonalModelId=>personalModel?.Value;
         internal bool RossiSelected=>Models.Find(PersonalModelId)!=null&&ModelProfiles.SupportsRossiOptions(PersonalModelId);
         internal object[] RemoteContainers=>containers.Where(p=>p.Value!=null).Select(p=>p.Key).ToArray();
@@ -123,43 +126,9 @@ namespace WKPmxAvatar
             if(Environment.GetCommandLineArgs().Any(a=>a=="-wkpmx-check"))StartCoroutine(CheckMaterialStartup());
 #endif
 
-            try
-            {
-                // 1.8.2 renamed RemotePlayer(s) and Component(s). Resolve both, check exact signature.
-                var asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "WKMultiPlayerMod");
-                var type = asm?.GetType("WKMPMod.RemotePlayers.RPContainer") ?? asm?.GetType("WKMPMod.RemotePlayer.RPContainer");
-                var init = type?.GetMethod("Initialize", new[] { typeof(GameObject), typeof(Transform) });
-                if (init == null || init.ReturnType != typeof(bool)) throw new MissingMethodException("Unsupported RPContainer.Initialize ABI");
-                harmony = new Harmony(Guid);
-                try{
-                    var ui=asm.GetType("WKMPMod.UI.UI_Manager")?.GetMethod("CreateLobbyScreen",Type.EmptyTypes);
-                    var localData=(asm.GetType("WKMPMod.Components.LocalPlayer")??asm.GetType("WKMPMod.Component.LocalPlayer"))?.GetMethod("PlayerDataDic",Type.EmptyTypes);
-                    var dictReceive=type.GetMethod("HandlePlayerDictData",new[]{typeof(Dictionary<string,string>)});
-                    if(ui==null||localData==null||dictReceive==null)throw new MissingMethodException("Lobby selection ABI unavailable");
-                    harmony.Patch(ui,postfix:new HarmonyMethod(typeof(AvatarSelectionSync).GetMethod(nameof(AvatarSelectionSync.AfterLobbyScreen))));
-                    harmony.Patch(localData,postfix:new HarmonyMethod(typeof(AvatarSelectionSync).GetMethod(nameof(AvatarSelectionSync.AfterDictionary))));
-                    harmony.Patch(dictReceive,postfix:new HarmonyMethod(typeof(AvatarSelectionSync).GetMethod(nameof(AvatarSelectionSync.AfterReceive))));
-                }catch(Exception e){SelectionWarning(e.Message);}
-                harmony.Patch(init, postfix: new HarmonyMethod(typeof(Plugin).GetMethod(nameof(AfterInitialize), BindingFlags.NonPublic | BindingFlags.Static)));
-                var pose = type.GetMethods().FirstOrDefault(m => m.Name == "HandlePlayerData" && m.GetParameters().Length == 1);
-                if (pose != null) harmony.Patch(pose, postfix: new HarmonyMethod(typeof(Plugin).GetMethod(nameof(AfterPose), BindingFlags.NonPublic | BindingFlags.Static)));
-                try{
-                    var local=asm.GetType("WKMPMod.Components.LocalPlayer")??asm.GetType("WKMPMod.Component.LocalPlayer");
-                    var timer=asm.GetType("WKMPMod.Util.TickTimer")??AppDomain.CurrentDomain.GetAssemblies().Select(a=>a.GetType("WKMPMod.Util.TickTimer")).FirstOrDefault(t=>t!=null);
-                    var send=local?.GetMethod("TrySendLocalPlayerData",BindingFlags.NonPublic|BindingFlags.Instance);var dict=local?.GetMethod("PlayerDataDic");var receive=type.GetMethod("HandlePlayerDictData");var tick=timer?.GetMethod("TryTick");
-                    if(send==null||dict==null||receive==null||tick==null)throw new MissingMethodException("Crouch dictionary ABI unavailable");
-                    harmony.Patch(send,prefix:new HarmonyMethod(typeof(CrouchSync).GetMethod(nameof(CrouchSync.BeforeSend))));harmony.Patch(dict,postfix:new HarmonyMethod(typeof(CrouchSync).GetMethod(nameof(CrouchSync.AfterDictionary))));harmony.Patch(receive,postfix:new HarmonyMethod(typeof(CrouchSync).GetMethod(nameof(CrouchSync.AfterReceive))));harmony.Patch(tick,postfix:new HarmonyMethod(typeof(CrouchSync).GetMethod(nameof(CrouchSync.AfterTimer))));
-                }catch(Exception e){Warn("Prompt crouch sync unavailable: "+e.Message);}
-                try{
-                    var hand=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name=="Assembly-CSharp")?.GetType("ENT_Player+Hand");
-                    var get=hand?.GetMethod("GetPoseSprite",new[]{typeof(string)});var cursor=hand?.GetMethod("SetInteractionSprite",new[]{typeof(Sprite),typeof(Sprite)});
-                    if(get==null||cursor==null||get.ReturnType!=typeof(Sprite))throw new MissingMethodException("Hand sprite ABI unavailable");
-                    harmony.Patch(get,postfix:new HarmonyMethod(typeof(Plugin).GetMethod(nameof(AfterHandPose),BindingFlags.NonPublic|BindingFlags.Static)));
-                    harmony.Patch(cursor,prefix:new HarmonyMethod(typeof(Plugin).GetMethod(nameof(BeforeHandCursor),BindingFlags.NonPublic|BindingFlags.Static)));
-                }catch(Exception e){Warn("Optional first person hooks unavailable: "+e.Message);}
-                Logger.LogInfo("Ready for " + asm.GetName().Version + ". Personal avatar selection uses installed model identities.");
-            }
-            catch (Exception ex) { Error("R001", "Avatar addon disabled: multiplayer interface is unsupported.",ex); harmony?.UnpatchSelf(); }
+            multiplayer = new MultiplayerHooks(Guid, Logger.LogInfo);
+            try { multiplayer.Install(selectionSync); }
+            catch (Exception ex) { Error("R001", "Multiplayer capability discovery failed.", ex); }
         }
         
 #if WKPMX_DEV
@@ -199,8 +168,12 @@ System.Collections.IEnumerator CheckMaterialStartup()
             var type = container.GetType();
             var root = (GameObject)type.GetProperty("PlayerObject").GetValue(container);
             if (root == null) return;
-            containers[container] = root;
             ulong id = Convert.ToUInt64(type.GetProperty("PlayerId").GetValue(container));
+            var remoteChoice = selectionSync?.ForAttach(container, id);
+            if (containers.TryGetValue(container, out var oldRoot) && oldRoot != null && oldRoot != root)
+                RemoveVisual(oldRoot.GetComponentInChildren<AvatarMotion>(true));
+            containers[container] = root;
+            containerIds[container] = id;
 
 #if WKPMX_DEV
             gazeIds[container]=id;
@@ -216,7 +189,6 @@ System.Collections.IEnumerator CheckMaterialStartup()
                 if (eq > 0 && ulong.TryParse(entry.Substring(0, eq).Trim(), out var key) && key == id)
                     manual = entry.Substring(eq + 1).Trim();
             }
-            peerModels.TryGetValue(container,out var remoteChoice);
             selected=Models.Resolve(remoteChoice,selected,manual);
             if(selected==null)return; // The sender explicitly chose the MP mod's original model.
             var asset = GetAsset(selected);
@@ -236,6 +208,7 @@ System.Collections.IEnumerator CheckMaterialStartup()
             {
                 var motion = go.GetComponent<AvatarMotion>();
                 motion.Initialize(root.transform, original);
+                CrouchSync.ApplyToRig(container, motion);
                 if(NativeRemoteMotion.Value)motion.EnableNativeMotion(MotionFolder,ModelHeight);
 
 #if WKPMX_DEV
@@ -315,36 +288,99 @@ internal void GetGazeRemotes(List<WKPmxAvatar.Gaze.GazeRemoteRoot> target)
         {
             var entry=Models.Find(id);if(entry==null)throw new InvalidOperationException("Rescan and choose an installed model first.");
             if(id!=ModelCatalog.Original&&GetAsset(entry.Path)==null)throw new InvalidOperationException("Model loading failed. Check the model files and textures.");
-            personalModel.Value=id;Config.Save();selectionSync?.Invalidate();FirstPersonSkin.Current?.Sync();
+            personalModel.Value=id;Config.Save();selectionSync?.PublishSelection();FirstPersonSkin.Current?.Sync();
         }
         internal void SelectionWarning(string message){if(selectionWarned)return;selectionWarned=true;Warn("Avatar selection: "+message);}
-        internal void ReceiveSelection(object container,string id)
+        internal bool IsRetiredContainer(object container) => retiredContainers.TryGetValue(container, out _);
+
+        internal void RetireContainer(object container)
         {
-            if(container==null||!containers.ContainsKey(container))return;
-            if(!string.IsNullOrEmpty(id)&&!ModelCatalog.ValidId(id))return;
-            peerModels.TryGetValue(container,out var previous);string next=string.IsNullOrEmpty(id)?null:id;
-            if(previous==next)return;if(next==null)peerModels.Remove(container);else peerModels[container]=next;RequestRefreshPlayers();
+            retiredContainers.GetValue(container, value => value);
+            CrouchSync.Forget(container);
+            pendingPeers.Remove(container);
+            if (containers.TryGetValue(container, out var root) && root != null)
+                RemoveVisual(root.GetComponentInChildren<AvatarMotion>(true));
+            containers.Remove(container);
+            containerIds.Remove(container);
+#if WKPMX_DEV
+            gazeIds.Remove(container);
+#endif
         }
-        internal void ClearSelections(){if(peerModels.Count==0)return;peerModels.Clear();RequestRefreshPlayers();}
-        void RequestRefreshPlayers(){refreshRequested=true;if(!refreshing){refreshing=true;StartCoroutine(RefreshPlayers());}}
+
+        internal void RemoveRemoteMember(ulong id)
+        {
+            foreach (var pair in containerIds.Where(pair => pair.Value == id).ToArray())
+                RetireContainer(pair.Key);
+        }
+
+        internal void ClearRemoteSession()
+        {
+            refreshRequested = false;
+            foreach (var container in containers.Keys.ToArray()) RetireContainer(container);
+            pendingPeers.Clear();
+        }
+
+        void RemoveVisual(AvatarMotion rig)
+        {
+            if (rig == null) return;
+            rig.Restore();
+            rig.gameObject.SetActive(false);
+            instances.Remove(rig);
+            Destroy(rig.gameObject);
+        }
+
+        internal void RefreshSelection(object container)
+        {
+            if (!containers.ContainsKey(container)) return;
+            pendingPeers.Add(container);
+            StartRefresh();
+        }
+
+        void RequestRefreshPlayers()
+        {
+            refreshRequested = true;
+            StartRefresh();
+        }
+
+        void StartRefresh()
+        {
+            if (refreshing) return;
+            refreshing = true;
+            StartCoroutine(RefreshPlayers());
+        }
+
         System.Collections.IEnumerator RefreshPlayers()
         {
-          while(refreshRequested){refreshRequested=false;
-            foreach (var rig in instances.ToArray()) if (rig != null) { rig.Restore(); Destroy(rig.gameObject); }
-            instances.Clear();
-            yield return null; // Let Unity destroy the previous visuals before attaching replacements.
-            foreach (var pair in containers.ToArray())
+            try
             {
-                if (pair.Value == null) { containers.Remove(pair.Key);peerModels.Remove(pair.Key);
-#if WKPMX_DEV
-gazeIds.Remove(pair.Key);
-#endif
- continue; }
-                try { if (featureEnabled.Value) Attach(pair.Key); }
-                catch (Exception ex) { Error("R004","Model switch failed; rescan local models and retry.",ex); }
+                // Coalesce multiple changes received in the same frame, then read the
+                // last validated selection when reattaching just the affected peers.
+                yield return null;
+                while (refreshRequested || pendingPeers.Count != 0)
+                {
+                    var batch = (refreshRequested ? containers.Keys.AsEnumerable() : pendingPeers).ToArray();
+                    refreshRequested = false;
+                    pendingPeers.Clear();
+                    foreach (var container in batch)
+                    {
+                        if (!containers.TryGetValue(container, out var root)) continue;
+                        if (root == null) { RetireContainer(container); continue; }
+                        RemoveVisual(root.GetComponentInChildren<AvatarMotion>(true));
+                    }
+                    yield return null;
+                    foreach (var container in batch)
+                    {
+                        if (!containers.TryGetValue(container, out var root) || root == null) continue;
+                        // A newer choice that arrived during destruction is used by Attach.
+                        pendingPeers.Remove(container);
+                        try { if (featureEnabled.Value) Attach(container); }
+                        catch (Exception ex) { Error("R004", "Model switch failed; rescan local models and retry.", ex); }
+                    }
+                }
             }
-          }refreshing=false;
+            finally { refreshing = false; }
         }
+
         
 #if WKPMX_DEV
 internal void PopulatePreview(GameObject root)
@@ -410,7 +446,8 @@ AvatarMotion CreateMirror(GameObject root)
             GazeWorld?.Dispose();
 #endif
 
-            harmony?.UnpatchSelf();
+            multiplayer?.Remove();
+            selectionSync?.ResetSession();
             foreach (var rig in instances) if (rig != null) { rig.Restore(); Destroy(rig.gameObject); }
             foreach (var asset in assets.Values) asset.Dispose();
             RenderingResources?.Dispose(); AppearanceOptions.Enabled=false;

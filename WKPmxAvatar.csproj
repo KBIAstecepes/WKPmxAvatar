@@ -19,6 +19,7 @@
   <Compile Include="src/Runtime/Physics/BoneChain.cs" />
   <Compile Include="src/Runtime/Physics/SkirtSurface.cs" />
   <Compile Include="src/Runtime/Compatibility/AvatarSelectionSync.cs" />
+  <Compile Include="src/Runtime/Compatibility/MultiplayerHooks.cs" />
   <Compile Include="src/Runtime/Common/BoundedWeakCache.cs" />
   <Compile Include="src/DevTools/FrameTimingWindow.cs" Condition="'$(BuildFlavor)'=='Development'" />
   <Compile Include="src/Runtime/Animation/OriginalMotionPreview.cs" />
